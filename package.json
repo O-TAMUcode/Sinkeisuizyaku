@@ -1,7 +1,7 @@
 {
   "name": "atom-shinkei-suijaku",
   "version": "1.0.0",
-  "description": "アトム神経衰弱 - オンライン対戦",
+  "description": "化学式神経衰弱 - オンライン対戦",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
