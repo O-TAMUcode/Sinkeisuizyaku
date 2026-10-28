@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>化学式神経衰弱</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#1d3a8a;
+  --ink:#16224a;
+  --bg:#eef3fa;
+  --line:#c9d6ec;
+  --accent:#f5a31a;
+  --accent-d:#d98a08;
+  --ok:#1f9d5a;
+  --muted:#6a7799;
+  --safe-t:env(safe-area-inset-top,0px);
+  --safe-b:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  min-height:100vh;min-height:100dvh;
+  font-family:"M PLUS Rounded 1c","Hiragino Maru Gothic ProN","Yu Gothic",sans-serif;
+  font-weight:500;color:var(--ink);background-color:var(--bg);
+  background-image:url("data:image/svg+xml,%3Csvg width='28' height='49' viewBox='0 0 28 49' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23d9e3f3' fill-rule='evenodd'%3E%3Cpath d='M13.99 9.25l13 7.5v15l-13 7.5L1 31.75v-15l12.99-7.5zM3 17.9v12.7l10.99 6.34 11-6.35V17.9l-11-6.34L3 17.9zM0 15l12.98-7.5V0h-2v6.35L0 12.69v2.3zm0 18.5L12.98 41v8h-2v-6.85L0 35.81v-2.3zM15 0v7.5L27.99 15H28v-2.31h-.01L17 6.35V0h-2zm0 49v-8l12.99-7.5H28v2.31h-.01L17 42.15V49h-2z'/%3E%3C/g%3E%3C/svg%3E");
+  padding:calc(12px + var(--safe-t)) 14px calc(20px + var(--safe-b));
+}
+.wrap{max-width:980px;margin:0 auto}
+h1{margin:0;font-weight:900;color:var(--navy);letter-spacing:.02em}
+button{font:inherit}
+.hidden{display:none!important}
+
+/* ---- ロゴの輪 ---- */
+.hero{display:flex;flex-direction:column;align-items:center;gap:6px;margin:8px 0 18px}
+#ring{position:relative;width:176px;aspect-ratio:1;container-type:inline-size}
+.ring-atom{position:absolute;width:23%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;
+  display:grid;place-items:center;font-weight:900;font-size:8.4cqw;line-height:1;
+  background:radial-gradient(circle at 34% 30%,var(--hi),var(--lo));color:var(--atom-ink);
+  box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.ring-c{position:absolute;inset:0;display:grid;place-items:center;text-align:center;
+  font-weight:900;font-size:11cqw;line-height:1.15;color:var(--navy)}
+.hero h1{font-size:30px}
+body[data-screen="lobby"] .hero,body[data-screen="game"] .hero{flex-direction:row;justify-content:flex-start;margin:0 0 10px}
+body[data-screen="lobby"] #ring,body[data-screen="game"] #ring{display:none}
+body[data-screen="lobby"] .hero h1,body[data-screen="game"] .hero h1{font-size:19px}
+
+/* ---- 共通パーツ ---- */
+.screen{display:none}
+.screen.active{display:block}
+.panel{max-width:440px;margin:0 auto;background:#fff;border:3px solid var(--navy);border-radius:20px;padding:22px 20px}
+.panel h2{margin:0 0 14px;font-size:20px;font-weight:900;color:var(--navy)}
+label{display:block;font-weight:800;margin-bottom:6px}
+input[type=text]{width:100%;font:inherit;font-weight:800;font-size:18px;padding:12px 14px;border:3px solid var(--line);border-radius:12px;background:#fff;color:var(--ink)}
+input[type=text]:focus{outline:none;border-color:var(--navy)}
+.btn{display:block;width:100%;font-weight:900;font-size:18px;padding:14px 20px;border-radius:999px;border:3px solid var(--navy);background:#fff;color:var(--navy);cursor:pointer;margin-top:12px}
+.btn.primary{background:var(--accent);box-shadow:0 4px 0 var(--accent-d)}
+.btn.primary:active{transform:translateY(3px);box-shadow:0 1px 0 var(--accent-d)}
+.btn:disabled{opacity:.45;cursor:not-allowed;box-shadow:none;transform:none}
+.btn.small{display:inline-block;width:auto;font-size:14px;padding:8px 16px;margin:0;border-width:2px}
+.btn.link{border:0;background:none;color:var(--muted);text-decoration:underline;font-size:14px;font-weight:800;padding:8px}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.err{color:#c62828;font-weight:800;min-height:1.4em;margin:10px 0 0;font-size:14px}
+.note{color:var(--muted);font-size:14px;margin:8px 0 0}
+.hello{margin:0 0 14px;font-weight:800}
+.hello b{color:var(--navy)}
+
+/* ---- ロビー ---- */
+.lobby-grid{display:grid;gap:14px;grid-template-columns:1fr}
+@media(min-width:760px){.lobby-grid{grid-template-columns:1fr 1fr;align-items:start}}
+.box{background:#fff;border:3px solid var(--line);border-radius:18px;padding:16px}
+.box h3{margin:0 0 10px;font-size:16px;font-weight:900;color:var(--navy)}
+.room-pw{font-size:26px;font-weight:900;color:var(--navy);word-break:break-all}
+.players{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.players li{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 12px;background:var(--bg);border-radius:12px;font-weight:800}
+.tag{font-size:12px;font-weight:800;padding:2px 8px;border-radius:999px;background:var(--navy);color:#fff}
+.tag.off{background:var(--muted)}
+.tag.me{background:var(--accent);color:var(--ink)}
+.deck{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
+.deck li{display:flex;align-items:center;gap:8px;font-weight:800;font-size:14px}
+.mini{width:30px;aspect-ratio:1;flex:none;border-radius:50%;display:grid;place-items:center;font-weight:900;font-size:12px;
+  background:radial-gradient(circle at 34% 30%,var(--hi),var(--lo));color:var(--atom-ink);box-shadow:0 1px 2px rgba(0,0,0,.25)}
+.rules{margin:0;padding-left:1.2em;display:grid;gap:6px;font-size:14px}
+.lobby-actions{max-width:440px;margin:16px auto 0}
+
+/* ---- ゲーム ---- */
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+.score{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:8px;flex:1}
+.chip{display:flex;align-items:baseline;gap:6px;padding:6px 12px;border-radius:999px;background:#fff;border:3px solid var(--line);font-weight:800;font-size:14px}
+.chip b{font-size:18px;font-weight:900}
+.chip.turn{border-color:var(--accent);background:#fff6df;box-shadow:0 0 0 3px rgba(245,163,26,.25)}
+.chip.off{opacity:.5}
+.status{margin:6px 0 10px;min-height:2.2em;font-weight:900;font-size:18px;color:var(--navy);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.status.mine{color:#b86e00}
+.status.match{color:var(--ok)}
+.status small{font-size:13px;color:var(--muted);font-weight:800}
+
+.board{--cols:8;display:grid;grid-template-columns:repeat(var(--cols),minmax(0,1fr));gap:clamp(3px,.9vw,8px);width:100%;margin:0 auto}
+@media(min-width:760px){
+  .board{--cols:10;max-width:min(100%,max(520px,calc((100vh - 230px)/1.16)));max-width:min(100%,max(520px,calc((100dvh - 230px)/1.16)))}
+}
+.card{container-type:inline-size;aspect-ratio:5/7;padding:0;border:0;background:none;cursor:pointer;perspective:700px;-webkit-tap-highlight-color:transparent}
+.card .inner{position:relative;width:100%;height:100%;transform-style:preserve-3d;transition:transform .45s ease}
+.card.up .inner{transform:rotateY(180deg)}
+.board:not(.locked) .card:not(.up):hover .inner{transform:translateY(-3px)}
+.board.locked .card{cursor:default}
+.card.gone{opacity:0;pointer-events:none;transition:opacity .4s .1s}
+.card.reveal{opacity:.5}
+.face{position:absolute;inset:0;border-radius:9cqw;backface-visibility:hidden;-webkit-backface-visibility:hidden;overflow:hidden}
+.back{
+  background-color:var(--navy);
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cg%3E%3Ccircle cx='50' cy='18' r='7.5' fill='%23f59a23'/%3E%3Ccircle cx='68.8' cy='24.1' r='7.5' fill='%233cb371'/%3E%3Ccircle cx='80.4' cy='40.1' r='7.5' fill='%23222'/%3E%3Ccircle cx='80.4' cy='59.9' r='7.5' fill='%23f6e33b'/%3E%3Ccircle cx='68.8' cy='75.9' r='7.5' fill='%23b8b8b8'/%3E%3Ccircle cx='50' cy='82' r='7.5' fill='%23d6283a'/%3E%3Ccircle cx='31.2' cy='75.9' r='7.5' fill='%238e5bb5'/%3E%3Ccircle cx='19.6' cy='59.9' r='7.5' fill='%232a4ea6'/%3E%3Ccircle cx='19.6' cy='40.1' r='7.5' fill='%23e83e96'/%3E%3Ccircle cx='31.2' cy='24.1' r='7.5' fill='%233da5e8'/%3E%3C/g%3E%3C/svg%3E");
+  background-size:92% auto;background-position:center;background-repeat:no-repeat;
+  border:3cqw solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.front{transform:rotateY(180deg);background:var(--bg-c);color:var(--fg);display:flex;flex-direction:column;gap:4cqw;padding:7cqw 7cqw 8cqw;box-shadow:0 1px 3px rgba(0,0,0,.25);border:1px solid rgba(0,0,0,.08)}
+.front.blank{border:2px solid #c3cde3}
+.jp{font-size:13cqw;font-weight:800;line-height:1.1;text-align:center;white-space:nowrap}
+.plate{flex:1;background:#fff;border-radius:5cqw;display:grid;place-items:center;min-height:0}
+.orb{width:68cqw;aspect-ratio:1;border-radius:50%;display:grid;place-items:center;font-weight:900;font-size:32cqw;line-height:1;
+  background:radial-gradient(circle at 34% 30%,var(--hi),var(--lo));color:var(--atom-ink);box-shadow:inset 0 -4cqw 8cqw rgba(0,0,0,.14)}
+.orb.two{font-size:27cqw}
+.orb.rainbow{background:conic-gradient(#ef5350,#ffca28,#66bb6a,#26c6da,#5c6bc0,#ab47bc,#ef5350);color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.5)}
+@container (max-width:52px){.jp{display:none}.front{padding:6cqw}.orb{width:80cqw}}
+.board.match .card.up .front{box-shadow:inset 0 0 0 4cqw var(--ok)}
+
+.result{max-width:520px;margin:16px auto 0;background:#fff;border:3px solid var(--navy);border-radius:20px;padding:18px}
+.result h2{margin:0 0 10px;font-size:20px;font-weight:900;color:var(--navy)}
+.rank{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.rank li{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:12px;background:var(--bg);font-weight:800}
+.rank li.win{background:#fff0c9;border:2px solid var(--accent)}
+.rank .n{width:2.4em;font-weight:900;color:var(--navy)}
+.rank .s{margin-left:auto;font-weight:900;font-size:18px}
+
+#toast{position:fixed;left:50%;bottom:calc(24px + var(--safe-b));transform:translateX(-50%);background:var(--ink);color:#fff;
+  padding:10px 18px;border-radius:999px;font-weight:800;font-size:14px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:10;max-width:90vw;text-align:center}
+#toast.show{opacity:1}
+@media(prefers-reduced-motion:reduce){.card .inner{transition:none}.card.gone{transition:none}}
+</style>
+</head>
+<body data-screen="name">
+<div class="wrap">
+  <header class="hero">
+    <div id="ring"></div>
+    <h1>化学式神経衰弱</h1>
+  </header>
+
+  <!-- 名前 -->
+  <section id="s-name" class="screen active">
+    <form class="panel" id="f-name" autocomplete="off">
+      <h2>あなたの名前を決めよう</h2>
+      <label for="in-name">名前</label>
+      <input type="text" id="in-name" maxlength="12" placeholder="12文字まで" required>
+      <button class="btn primary" type="submit">決定</button>
+    </form>
+  </section>
+
+  <!-- メニュー -->
+  <section id="s-menu" class="screen">
+    <div class="panel">
+      <p class="hello"><b id="hello-name"></b> さん</p>
+      <button class="btn primary" id="b-create" type="button">部屋を作る</button>
+      <button class="btn" id="b-join" type="button">部屋に入る</button>
+      <div style="text-align:center;margin-top:8px"><button class="btn link" id="b-rename" type="button">名前を変える</button></div>
+    </div>
+  </section>
+
+  <!-- パスワード -->
+  <section id="s-pw" class="screen">
+    <form class="panel" id="f-pw" autocomplete="off">
+      <h2 id="pw-title"></h2>
+      <label for="in-pw">パスワード</label>
+      <input type="text" id="in-pw" maxlength="20" required>
+      <p class="note" id="pw-note"></p>
+      <p class="err" id="pw-err" role="alert"></p>
+      <button class="btn primary" type="submit" id="pw-submit"></button>
+      <button class="btn" type="button" id="pw-back">戻る</button>
+    </form>
+  </section>
+
+  <!-- ロビー -->
+  <section id="s-lobby" class="screen">
+    <div class="lobby-grid">
+      <div class="box">
+        <h3>部屋のパスワード</h3>
+        <div class="room-pw" id="lobby-pw"></div>
+        <p class="note">このパスワードを友だちに伝えよう</p>
+        <h3 style="margin-top:16px">参加者 <span id="lobby-count"></span></h3>
+        <ul class="players" id="lobby-players"></ul>
+      </div>
+      <div class="box">
+        <h3>あそびかた</h3>
+        <ol class="rules">
+          <li>順番に2枚めくる。同じ原子ならペア成立で、もう一度めくれる。</li>
+          <li>白紙はオールマイティー。どの原子ともペアになる（白紙どうしもOK）。</li>
+          <li>ペアが作れなくなったら終了。ペアが多い人の勝ち。</li>
+        </ol>
+        <h3 style="margin-top:16px">カードの枚数</h3>
+        <ul class="deck" id="lobby-deck"></ul>
+      </div>
+    </div>
+    <div class="lobby-actions">
+      <button class="btn primary" id="b-start" type="button">ゲームを始める</button>
+      <p class="note" id="start-note" style="text-align:center"></p>
+      <button class="btn" id="b-leave-lobby" type="button">部屋を出る</button>
+    </div>
+  </section>
+
+  <!-- ゲーム -->
+  <section id="s-game" class="screen">
+    <div class="topbar">
+      <ul class="score" id="score"></ul>
+      <button class="btn small" id="b-leave-game" type="button">部屋を出る</button>
+    </div>
+    <div class="status" id="status"></div>
+    <div class="board locked" id="board"></div>
+    <div class="result hidden" id="result">
+      <h2>けっか</h2>
+      <ol class="rank" id="rank"></ol>
+      <button class="btn primary" id="b-again" type="button">もう一度あそぶ</button>
+      <p class="note hidden" id="again-note" style="text-align:center">部屋主がもう一度始めるのを待っています</p>
+      <button class="btn" id="b-leave-result" type="button">部屋を出る</button>
+    </div>
+  </section>
+</div>
+<div id="toast" role="status"></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+(function(){
+'use strict';
+
+/* サーバー経由で開いていない（ファイルを直接開いた等）場合の案内 */
+if(typeof io === 'undefined'){
+  var m = document.createElement('div');
+  m.style.cssText = 'max-width:480px;margin:40px auto;padding:20px;background:#fff;border:3px solid #1d3a8a;border-radius:16px;font-weight:800;line-height:1.7';
+  m.innerHTML = 'サーバーにつながっていません。<br>このファイルを直接開かず、Renderで公開したURL（またはnpm startしたlocalhost）から開いてください。';
+  document.body.innerHTML = '';
+  document.body.appendChild(m);
+  return;
+}
+
+/* ---- 原子データ ---- */
+var ATOM = {
+  H:    {sym:'H',  jp:'水素',      bg:'#3aa3e6', hi:'#b3e0fb', lo:'#2b8ad4', ink:'#17489a', fg:'#fff'},
+  O:    {sym:'O',  jp:'酸素',      bg:'#f0a030', hi:'#ffd69a', lo:'#e8841a', ink:'#9a4310', fg:'#fff'},
+  C:    {sym:'C',  jp:'炭素',      bg:'#26211f', hi:'#9a9a9a', lo:'#0f0d0d', ink:'#fff',    fg:'#fff'},
+  N:    {sym:'N',  jp:'窒素',      bg:'#1c3f94', hi:'#c0caf5', lo:'#3149a8', ink:'#142a7a', fg:'#fff'},
+  Cl:   {sym:'Cl', jp:'塩素',      bg:'#34a06a', hi:'#bdf0d1', lo:'#2f9c60', ink:'#13693a', fg:'#fff'},
+  Na:   {sym:'Na', jp:'ナトリウム', bg:'#e8509e', hi:'#fcc1de', lo:'#e0408f', ink:'#a90f5a', fg:'#fff'},
+  Ag:   {sym:'Ag', jp:'銀',        bg:'#b9bcc2', hi:'#f4f4f4', lo:'#8b8e94', ink:'#4b4e55', fg:'#222'},
+  Fe:   {sym:'Fe', jp:'鉄',        bg:'#8e63b5', hi:'#e0cbf3', lo:'#7a4aa5', ink:'#4a2279', fg:'#fff'},
+  Cu:   {sym:'Cu', jp:'銅',        bg:'#d6283a', hi:'#f8aab1', lo:'#c01f30', ink:'#7a0a18', fg:'#fff'},
+  S:    {sym:'S',  jp:'硫黄',      bg:'#f6e33b', hi:'#fffbb8', lo:'#f0d01a', ink:'#4d4708', fg:'#3a3600'},
+  BLANK:{sym:'★', jp:'白紙',      bg:'#ffffff', hi:'#ffffff', lo:'#e6ebf5', ink:'#fff',    fg:'#333', blank:true}
+};
+function atomVars(el, t){
+  var a = ATOM[t]; if(!a) return;
+  el.style.setProperty('--hi', a.hi);
+  el.style.setProperty('--lo', a.lo);
+  el.style.setProperty('--atom-ink', a.ink);
+}
+
+/* ---- ヘルパー ---- */
+function $(s){ return document.querySelector(s); }
+function h(tag, cls, text){
+  var e = document.createElement(tag);
+  if(cls) e.className = cls;
+  if(text !== undefined) e.textContent = text;
+  return e;
+}
+function store(key, val){
+  try{
+    if(val === undefined) return JSON.parse(localStorage.getItem(key));
+    if(val === null) localStorage.removeItem(key); else localStorage.setItem(key, JSON.stringify(val));
+  }catch(e){ return null; }
+}
+var toastTimer;
+function toast(msg){
+  var t = $('#toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(function(){ t.classList.remove('show'); }, 2600);
+}
+function show(name){
+  document.body.dataset.screen = name;
+  ['name','menu','pw','lobby','game'].forEach(function(n){
+    $('#s-'+n).classList.toggle('active', n === name);
+  });
+}
+
+/* ---- ロゴの輪 ---- */
+(function buildRing(){
+  var ring = $('#ring');
+  ['O','Cl','C','S','Ag','Cu','Fe','N','Na','H'].forEach(function(t,i){
+    var a = i*36*Math.PI/180;
+    var d = h('span','ring-atom',ATOM[t].sym);
+    d.style.left = (50 + 38*Math.sin(a)) + '%';
+    d.style.top  = (50 - 38*Math.cos(a)) + '%';
+    atomVars(d,t);
+    ring.appendChild(d);
+  });
+  var c = h('div','ring-c'); c.innerHTML = 'Atom<br>Model<br>Cards';
+  ring.appendChild(c);
+})();
+
+/* ---- 状態 ---- */
+var socket = io();
+var myName = store('memo_name') || '';
+var session = store('memo_session');   // {playerId, pw}
+var mode = 'create';
+var st = null;
+var board = $('#board');
+
+function goStart(){ show(myName ? 'menu' : 'name'); $('#hello-name').textContent = myName; }
+goStart();
+
+/* ---- 名前 ---- */
+$('#f-name').addEventListener('submit', function(e){
+  e.preventDefault();
+  var v = $('#in-name').value.trim();
+  if(!v) return;
+  myName = Array.from(v).slice(0,12).join('');
+  store('memo_name', myName);
+  goStart();
+});
+$('#b-rename').addEventListener('click', function(){
+  $('#in-name').value = myName; show('name'); $('#in-name').focus();
+});
+
+/* ---- メニュー ---- */
+function openPw(m){
+  mode = m;
+  $('#pw-title').textContent = m === 'create' ? '部屋を作る' : '部屋に入る';
+  $('#pw-note').textContent = m === 'create' ? '好きなパスワードを決めよう。友だちにはこれを伝える。' : '部屋を作った人に聞いたパスワードを入力しよう。';
+  $('#pw-submit').textContent = m === 'create' ? '部屋を作る' : '入室する';
+  $('#pw-err').textContent = '';
+  $('#in-pw').value = '';
+  show('pw'); $('#in-pw').focus();
+}
+$('#b-create').addEventListener('click', function(){ openPw('create'); });
+$('#b-join').addEventListener('click', function(){ openPw('join'); });
+$('#pw-back').addEventListener('click', goStart);
+
+$('#f-pw').addEventListener('submit', function(e){
+  e.preventDefault();
+  var pw = $('#in-pw').value.trim();
+  if(!pw) return;
+  $('#pw-submit').disabled = true;
+  socket.emit(mode, {name: myName, pw: pw}, function(res){
+    $('#pw-submit').disabled = false;
+    if(!res || !res.ok){ $('#pw-err').textContent = (res && res.error) || 'うまくいきませんでした'; return; }
+    session = {playerId: res.playerId, pw: res.pw};
+    store('memo_session', session);
+  });
+});
+
+/* ---- 退出 ---- */
+function leave(ask){
+  if(ask && !confirm('部屋を出ますか？')) return;
+  session = null; store('memo_session', null);
+  socket.emit('leave', null, function(){});
+  st = null; board.innerHTML = '';
+  goStart();
+}
+$('#b-leave-lobby').addEventListener('click', function(){ leave(false); });
+$('#b-leave-game').addEventListener('click', function(){ leave(st && st.phase === 'playing'); });
+$('#b-leave-result').addEventListener('click', function(){ leave(false); });
+$('#b-start').addEventListener('click', function(){ socket.emit('start'); });
+$('#b-again').addEventListener('click', function(){ socket.emit('again'); });
+
+/* ---- 通信 ---- */
+socket.on('connect', function(){
+  if(session){
+    socket.emit('resume', session, function(res){
+      if(!res || !res.ok){
+        var inRoom = document.body.dataset.screen === 'lobby' || document.body.dataset.screen === 'game';
+        session = null; store('memo_session', null); st = null; board.innerHTML = '';
+        if(inRoom){ toast('部屋が見つかりませんでした'); goStart(); }
+      }
+    });
+  }
+});
+socket.on('disconnect', function(){ toast('接続が切れました。つなぎ直しています…'); });
+socket.on('closed', function(){
+  if(!session) return;
+  session = null; store('memo_session', null); st = null; board.innerHTML = '';
+  toast('部屋が閉じられました'); goStart();
+});
+socket.on('state', function(s){
+  if(!session) return;
+  st = s;
+  render();
+});
+
+/* ---- 描画 ---- */
+function me(){ return st && st.players.find(function(p){ return p.id === session.playerId; }); }
+
+function render(){
+  if(st.phase === 'lobby'){
+    board.innerHTML = '';
+    show('lobby'); renderLobby();
+  } else {
+    show('game'); renderGame();
+  }
+}
+
+function playerRow(p){
+  var li = h('li');
+  li.appendChild(h('span','',p.name));
+  if(p.id === st.hostId) li.appendChild(h('span','tag','部屋主'));
+  if(p.id === session.playerId) li.appendChild(h('span','tag me','あなた'));
+  if(!p.connected) li.appendChild(h('span','tag off','接続切れ'));
+  return li;
+}
+
+function renderLobby(){
+  $('#lobby-pw').textContent = st.pw;
+  var act = st.players.filter(function(p){ return p.connected; }).length;
+  $('#lobby-count').textContent = '（' + st.players.length + '/' + st.limits.max + '人）';
+  var ul = $('#lobby-players'); ul.innerHTML = '';
+  st.players.forEach(function(p){ ul.appendChild(playerRow(p)); });
+
+  var deck = $('#lobby-deck'); deck.innerHTML = '';
+  st.deck.forEach(function(d){
+    var a = ATOM[d.t]; if(!a) return;
+    var li = h('li');
+    var m = h('span','mini', a.sym); atomVars(m, d.t);
+    if(a.blank) m.style.background = 'conic-gradient(#ef5350,#ffca28,#66bb6a,#26c6da,#5c6bc0,#ab47bc,#ef5350)';
+    li.appendChild(m);
+    li.appendChild(h('span','', a.jp + ' ×' + d.n));
+    deck.appendChild(li);
+  });
+
+  var isHost = st.hostId === session.playerId;
+  var btn = $('#b-start');
+  btn.classList.toggle('hidden', !isHost);
+  btn.disabled = act < st.limits.min;
+  $('#start-note').textContent = isHost
+    ? (act < st.limits.min ? st.limits.min + '人以上そろうと始められます' : '')
+    : '部屋主が始めるのを待っています';
+}
+
+function buildBoard(n){
+  board.innerHTML = '';
+  for(var i=0;i<n;i++){
+    var b = h('button','card'); b.type = 'button'; b.dataset.i = i;
+    b.setAttribute('aria-label','カード ' + (i+1));
+    var inner = h('div','inner');
+    inner.appendChild(h('div','face back'));
+    inner.appendChild(h('div','face front'));
+    b.appendChild(inner);
+    board.appendChild(b);
+  }
+}
+
+function fillFront(front, t){
+  var a = ATOM[t]; if(!a) return;
+  front.innerHTML = '';
+  front.classList.toggle('blank', !!a.blank);
+  front.style.setProperty('--bg-c', a.bg);
+  front.style.setProperty('--fg', a.fg);
+  front.appendChild(h('div','jp',a.jp));
+  var plate = h('div','plate');
+  var orb = h('div','orb' + (a.sym.length > 1 ? ' two' : '') + (a.blank ? ' rainbow' : ''), a.sym);
+  atomVars(orb, t);
+  plate.appendChild(orb);
+  front.appendChild(plate);
+}
+
+function renderGame(){
+  var meId = session.playerId;
+
+  // スコア
+  var sc = $('#score'); sc.innerHTML = '';
+  st.players.forEach(function(p){
+    var li = h('li','chip' + (p.id === st.turnId ? ' turn' : '') + ((!p.connected || p.left) ? ' off' : ''));
+    li.appendChild(h('span','', p.name + (p.id === meId ? '（あなた）' : '')));
+    li.appendChild(h('b','', String(p.score)));
+    li.appendChild(h('span','', p.left ? '組・退出' : (!p.connected ? '組・接続切れ' : '組')));
+    sc.appendChild(li);
+  });
+
+  // ステータス
+  var stEl = $('#status'); stEl.innerHTML = '';
+  var cls = 'status';
+  var text = st.message;
+  var myTurn = st.phase === 'playing' && st.turnId === meId;
+  if(st.phase === 'playing' && !st.busy && myTurn){
+    text = 'あなたの番です。カードを2枚めくろう'; cls += ' mine';
+  } else if(st.result === 'match'){ cls += ' match'; }
+  stEl.className = cls;
+  stEl.appendChild(h('span','', text));
+  if(st.phase === 'playing') stEl.appendChild(h('small','', 'のこり ' + st.remaining + '枚'));
+
+  // ボード
+  if(board.children.length !== st.cards.length) buildBoard(st.cards.length);
+  board.classList.toggle('locked', !(myTurn && !st.busy));
+  board.classList.toggle('match', st.result === 'match');
+  st.cards.forEach(function(c, i){
+    var el = board.children[i];
+    var revealed = c.s === 0 && !!c.t;
+    el.classList.toggle('up', c.s === 1 || revealed);
+    el.classList.toggle('reveal', revealed);
+    el.classList.toggle('gone', c.s === 2);
+    el.disabled = c.s !== 0 || st.phase !== 'playing';
+    if(c.t && el.dataset.t !== c.t){
+      el.dataset.t = c.t;
+      fillFront(el.querySelector('.front'), c.t);
+    }
+    if(c.t) el.setAttribute('aria-label', ATOM[c.t] ? ATOM[c.t].jp : 'カード');
+    else el.setAttribute('aria-label', 'カード ' + (i+1));
+  });
+
+  // 結果
+  var res = $('#result');
+  res.classList.toggle('hidden', st.phase !== 'finished');
+  if(st.phase === 'finished'){
+    var rank = $('#rank'); rank.innerHTML = '';
+    var list = st.players.slice().sort(function(a,b){ return b.score - a.score; });
+    list.forEach(function(p){
+      var r = 1 + st.players.filter(function(q){ return q.score > p.score; }).length;
+      var li = h('li', r === 1 ? 'win' : '');
+      li.appendChild(h('span','n', r + '位'));
+      li.appendChild(h('span','', p.name + (p.id === meId ? '（あなた）' : '')));
+      li.appendChild(h('span','s', p.score + '組'));
+      rank.appendChild(li);
+    });
+    var isHost = st.hostId === meId;
+    $('#b-again').classList.toggle('hidden', !isHost);
+    $('#again-note').classList.toggle('hidden', isHost);
+    res.scrollIntoView({behavior:'smooth', block:'nearest'});
+  }
+}
+
+board.addEventListener('click', function(e){
+  var b = e.target.closest('.card');
+  if(!b || !st || st.phase !== 'playing' || st.busy || st.turnId !== session.playerId) return;
+  var i = Number(b.dataset.i);
+  if(!st.cards[i] || st.cards[i].s !== 0) return;
+  socket.emit('flip', i);
+});
+
+})();
+</script>
+</body>
+</html>
